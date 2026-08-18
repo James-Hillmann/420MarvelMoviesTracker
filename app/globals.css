@@ -412,6 +412,197 @@ body {
   box-shadow: 0 0 14px rgba(232, 182, 76, 0.3);
 }
 
+/* ---------- profile picker ---------- */
+.picker-overlay {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  animation: overlay-in 0.4s ease both;
+}
+
+.picker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: min(220px, 42vw);
+  padding: 2rem 1rem 1.8rem;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--aura, #e8b64c) 40%, transparent);
+  background:
+    radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--aura, #e8b64c) 14%, transparent), transparent 70%),
+    rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.picker-card:hover,
+.picker-card:focus-visible {
+  transform: translateY(-6px) scale(1.04);
+  border-color: var(--aura, #e8b64c);
+  box-shadow:
+    0 0 40px color-mix(in srgb, var(--aura, #e8b64c) 35%, transparent),
+    0 18px 40px rgba(0, 0, 0, 0.5);
+}
+
+.picker-name {
+  font-family: var(--font-bebas), sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: 0.16em;
+  color: color-mix(in srgb, var(--aura, #e8b64c) 70%, white);
+}
+
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-bebas), sans-serif;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  padding: 5px 12px 3px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--aura, #e8b64c) 55%, transparent);
+  color: color-mix(in srgb, var(--aura, #e8b64c) 75%, white);
+  background: color-mix(in srgb, var(--aura, #e8b64c) 10%, transparent);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.profile-chip:hover {
+  background: color-mix(in srgb, var(--aura, #e8b64c) 22%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--aura, #e8b64c) 30%, transparent);
+}
+
+.profile-chip .chev {
+  font-size: 0.7em;
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+}
+
+.profile-chip .chev.open {
+  transform: rotate(180deg);
+}
+
+/* ---------- settings dropdown ---------- */
+.settings-wrap {
+  position: relative;
+  /* hover bridge so the menu doesn't close crossing the gap */
+  padding-bottom: 6px;
+  margin-bottom: -6px;
+}
+
+.settings-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: 220px;
+  padding: 0.6rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #14141e, #0a0a12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.75), 0 0 24px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  animation: menu-in 0.18s ease both;
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.settings-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 0.2rem 0.4rem 0.4rem;
+}
+
+.settings-seg {
+  display: flex;
+  gap: 4px;
+  padding: 0 0.2rem 0.5rem;
+}
+
+.settings-seg button {
+  flex: 1;
+  font-family: var(--font-bebas), sans-serif;
+  letter-spacing: 0.12em;
+  font-size: 0.74rem;
+  padding: 6px 4px 4px;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-seg button.active {
+  background: linear-gradient(90deg, rgba(232, 182, 76, 0.25), rgba(232, 182, 76, 0.1));
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.4rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.settings-row:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.settings-divider {
+  height: 1px;
+  margin: 0.3rem 0.2rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.switch {
+  position: relative;
+  width: 34px;
+  height: 19px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.switch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+
+.switch.on {
+  background: var(--trail-done);
+  box-shadow: 0 0 10px rgba(53, 224, 106, 0.5);
+}
+
+.switch.on .knob {
+  transform: translateX(15px);
+}
+
 /* ---------- modal ---------- */
 .modal-overlay {
   position: fixed;

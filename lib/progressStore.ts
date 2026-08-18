@@ -13,13 +13,14 @@ export type WatchedMap = Record<string, number>; // id -> epoch ms watched
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
-const KEY = "mcu:watched";
+
+const redisKey = (profile: string) => `mcu:watched:${profile}`;
 
 // project-local file for dev; /tmp fallback keeps the API alive on a
 // read-only serverless filesystem (ephemeral!) until Redis is connected
-const FILES = [
-  path.join(process.cwd(), ".data", "progress.json"),
-  path.join(os.tmpdir(), "mcu-progress.json"),
+const fileCandidates = (profile: string) => [
+  path.join(process.cwd(), ".data", `progress-${profile}.json`),
+  path.join(os.tmpdir(), `mcu-progress-${profile}.json`),
 ];
 
 export function storageKind(): "redis" | "file" {
@@ -41,8 +42,8 @@ async function redisCmd(cmd: unknown[]): Promise<unknown> {
   return data.result;
 }
 
-async function readFileMap(): Promise<WatchedMap> {
-  for (const file of FILES) {
+async function readFileMap(profile: string): Promise<WatchedMap> {
+  for (const file of fileCandidates(profile)) {
     try {
       return JSON.parse(await fs.readFile(file, "utf8")) as WatchedMap;
     } catch {
@@ -52,9 +53,9 @@ async function readFileMap(): Promise<WatchedMap> {
   return {};
 }
 
-async function writeFileMap(map: WatchedMap): Promise<void> {
+async function writeFileMap(profile: string, map: WatchedMap): Promise<void> {
   let lastErr: unknown;
-  for (const file of FILES) {
+  for (const file of fileCandidates(profile)) {
     try {
       await fs.mkdir(path.dirname(file), { recursive: true });
       await fs.writeFile(file, JSON.stringify(map, null, 2));
@@ -66,9 +67,9 @@ async function writeFileMap(map: WatchedMap): Promise<void> {
   throw lastErr;
 }
 
-export async function getWatched(): Promise<WatchedMap> {
+export async function getWatched(profile: string): Promise<WatchedMap> {
   if (storageKind() === "redis") {
-    const flat = (await redisCmd(["HGETALL", KEY])) as string[] | null;
+    const flat = (await redisCmd(["HGETALL", redisKey(profile)])) as string[] | null;
     const map: WatchedMap = {};
     if (Array.isArray(flat)) {
       for (let i = 0; i < flat.length; i += 2) {
@@ -77,21 +78,21 @@ export async function getWatched(): Promise<WatchedMap> {
     }
     return map;
   }
-  return readFileMap();
+  return readFileMap(profile);
 }
 
-export async function setWatched(id: string, watched: boolean): Promise<WatchedMap> {
+export async function setWatched(profile: string, id: string, watched: boolean): Promise<WatchedMap> {
   if (storageKind() === "redis") {
     if (watched) {
-      await redisCmd(["HSET", KEY, id, String(Date.now())]);
+      await redisCmd(["HSET", redisKey(profile), id, String(Date.now())]);
     } else {
-      await redisCmd(["HDEL", KEY, id]);
+      await redisCmd(["HDEL", redisKey(profile), id]);
     }
-    return getWatched();
+    return getWatched(profile);
   }
-  const map = await readFileMap();
+  const map = await readFileMap(profile);
   if (watched) map[id] = Date.now();
   else delete map[id];
-  await writeFileMap(map);
+  await writeFileMap(profile, map);
   return map;
 }

@@ -5,18 +5,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export type WatchedMap = Record<string, number>;
 
 /**
- * Shared progress state — talks to /api/progress (Redis when deployed, local
- * file in dev).  Optimistic updates, refetch on focus + a slow poll so
- * James and Deniz stay in sync while both have the site open.
+ * Shared progress state for one profile — talks to /api/progress (Redis when
+ * deployed, local file in dev).  Optimistic updates, refetch on focus + a slow
+ * poll so everyone viewing the same board stays in sync.
  */
-export function useProgress() {
+export function useProgress(profile: string | null) {
   const [watched, setWatchedMap] = useState<WatchedMap>({});
   const [loaded, setLoaded] = useState(false);
   const inFlight = useRef(0);
 
   const refresh = useCallback(async () => {
+    if (!profile) return;
     try {
-      const res = await fetch("/api/progress", { cache: "no-store" });
+      const res = await fetch(`/api/progress?profile=${encodeURIComponent(profile)}`, { cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as { watched: WatchedMap };
       // don't clobber optimistic state while a toggle is mid-flight
@@ -25,7 +26,13 @@ export function useProgress() {
     } catch {
       /* offline — keep whatever we have */
     }
-  }, []);
+  }, [profile]);
+
+  // reset instantly when switching profiles so boards never bleed together
+  useEffect(() => {
+    setWatchedMap({});
+    setLoaded(false);
+  }, [profile]);
 
   useEffect(() => {
     refresh();
@@ -40,6 +47,7 @@ export function useProgress() {
 
   const toggle = useCallback(
     async (id: string) => {
+      if (!profile) return false;
       const nowWatched = !watched[id];
       setWatchedMap((m) => {
         const next = { ...m };
@@ -52,7 +60,7 @@ export function useProgress() {
         const res = await fetch("/api/progress", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, watched: nowWatched }),
+          body: JSON.stringify({ profile, id, watched: nowWatched }),
         });
         if (res.ok) {
           const data = (await res.json()) as { watched: WatchedMap };
@@ -65,7 +73,7 @@ export function useProgress() {
       }
       return nowWatched;
     },
-    [watched],
+    [watched, profile],
   );
 
   return { watched, loaded, toggle };

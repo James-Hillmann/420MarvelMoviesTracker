@@ -2,17 +2,61 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { celebrate } from "@/lib/confetti";
+import { Profile, profileById } from "@/lib/profiles";
 import { COUNTED_MOVIES, Entry, moviesInOrder, SHOWS } from "@/lib/timeline";
 import { useProgress } from "@/lib/useProgress";
 import Board from "./Board";
 import DetailModal from "./DetailModal";
+import ProfilePicker from "./ProfilePicker";
 import ProgressHeader from "./ProgressHeader";
 import SagaBackground from "./SagaBackground";
 
+const PROFILE_STORAGE_KEY = "mcu-profile";
+
 export default function TrackerApp() {
-  const { watched, toggle } = useProgress();
-  const [orderMode, setOrderMode] = useState<"release" | "chrono">("release");
+  // null = not yet loaded from storage; "" = loaded, none picked
+  const [profileId, setProfileId] = useState<string | null>(null);
+  useEffect(() => {
+    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+    setProfileId(profileById(saved) ? (saved as string) : "");
+  }, []);
+
+  const pickProfile = (p: Profile) => {
+    localStorage.setItem(PROFILE_STORAGE_KEY, p.id);
+    setProfileId(p.id);
+  };
+
+  const profile = profileById(profileId);
+  const { watched, toggle } = useProgress(profile?.id ?? null);
+  const [orderMode, setOrderModeState] = useState<"release" | "chrono">("release");
+  const [showShows, setShowShowsState] = useState(true);
   const [selected, setSelected] = useState<Entry | null>(null);
+
+  // per-device display settings
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("mcu-settings") ?? "{}") as {
+        orderMode?: "release" | "chrono";
+        showShows?: boolean;
+      };
+      if (saved.orderMode === "chrono" || saved.orderMode === "release") setOrderModeState(saved.orderMode);
+      if (typeof saved.showShows === "boolean") setShowShowsState(saved.showShows);
+    } catch {
+      /* corrupt settings — defaults win */
+    }
+  }, []);
+
+  const saveSettings = (orderModeVal: "release" | "chrono", showShowsVal: boolean) => {
+    localStorage.setItem("mcu-settings", JSON.stringify({ orderMode: orderModeVal, showShows: showShowsVal }));
+  };
+  const setOrderMode = (mode: "release" | "chrono") => {
+    setOrderModeState(mode);
+    saveSettings(mode, showShows);
+  };
+  const setShowShows = (show: boolean) => {
+    setShowShowsState(show);
+    saveSettings(orderMode, show);
+  };
 
   // phones get a roomier 2-wide snake so wordmarks don't wrap into mush
   const [isMobile, setIsMobile] = useState(false);
@@ -39,6 +83,20 @@ export default function TrackerApp() {
     if (nowWatched) celebrate(entry.wm.aura);
   };
 
+  // wait for localStorage before rendering anything (avoids a picker flash)
+  if (profileId === null) {
+    return <div className="min-h-screen" />;
+  }
+
+  if (!profile) {
+    return (
+      <div className="relative min-h-screen">
+        <SagaBackground />
+        <ProfilePicker onPick={pickProfile} />
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen">
       <SagaBackground />
@@ -50,12 +108,19 @@ export default function TrackerApp() {
         totalShows={SHOWS.length}
         orderMode={orderMode}
         onOrderChange={setOrderMode}
+        showShows={showShows}
+        onShowShowsChange={setShowShows}
+        profile={profile}
+        onSwitchProfile={() => {
+          localStorage.removeItem(PROFILE_STORAGE_KEY);
+          setProfileId("");
+        }}
       />
 
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-8">
         <div className="flex flex-col gap-12 lg:flex-row lg:gap-8">
           {/* movies — the main quest */}
-          <section className="min-w-0 lg:flex-[3]">
+          <section className={showShows ? "min-w-0 lg:flex-[3]" : "mx-auto w-full max-w-3xl min-w-0"}>
             <div className="mb-4 flex items-baseline justify-between">
               <h2 className="f-bebas text-lg tracking-[0.35em] text-white/70">THE MOVIES</h2>
               <span className="text-[11px] uppercase tracking-[0.2em] text-white/35">
@@ -78,6 +143,7 @@ export default function TrackerApp() {
           </section>
 
           {/* shows — the side quest */}
+          {showShows && (
           <aside className="min-w-0 lg:flex-[2] lg:border-l lg:border-white/10 lg:pl-8">
             <div className="mb-4 flex items-baseline justify-between">
               <h2 className="f-bebas text-lg tracking-[0.35em] text-white/70">SIDE QUEST · TV</h2>
@@ -100,10 +166,11 @@ export default function TrackerApp() {
               onQuickToggle={handleToggle}
             />
           </aside>
+          )}
         </div>
 
         <footer className="mt-20 text-center text-[11px] uppercase tracking-[0.3em] text-white/25">
-          James &amp; Deniz vs. the Multiverse · data from TMDB
+          {profile.label} vs. the Multiverse · data from TMDB
         </footer>
       </main>
 
