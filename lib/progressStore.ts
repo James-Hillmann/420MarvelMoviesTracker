@@ -1,0 +1,97 @@
+import { promises as fs } from "fs";
+import os from "os";
+import path from "path";
+
+/**
+ * Shared watch-progress store.
+ *  - Upstash Redis (REST API, no SDK needed) when env vars are present — the
+ *    deployed, shared-between-James-and-Deniz mode.
+ *  - Local JSON file fallback for dev so the site works with zero setup.
+ */
+
+export type WatchedMap = Record<string, number>; // id -> epoch ms watched
+
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+const KEY = "mcu:watched";
+
+// project-local file for dev; /tmp fallback keeps the API alive on a
+// read-only serverless filesystem (ephemeral!) until Redis is connected
+const FILES = [
+  path.join(process.cwd(), ".data", "progress.json"),
+  path.join(os.tmpdir(), "mcu-progress.json"),
+];
+
+export function storageKind(): "redis" | "file" {
+  return REDIS_URL && REDIS_TOKEN ? "redis" : "file";
+}
+
+async function redisCmd(cmd: unknown[]): Promise<unknown> {
+  const res = await fetch(REDIS_URL as string, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${REDIS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(cmd),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Redis error ${res.status}: ${await res.text()}`);
+  const data = (await res.json()) as { result: unknown };
+  return data.result;
+}
+
+async function readFileMap(): Promise<WatchedMap> {
+  for (const file of FILES) {
+    try {
+      return JSON.parse(await fs.readFile(file, "utf8")) as WatchedMap;
+    } catch {
+      /* try next */
+    }
+  }
+  return {};
+}
+
+async function writeFileMap(map: WatchedMap): Promise<void> {
+  let lastErr: unknown;
+  for (const file of FILES) {
+    try {
+      await fs.mkdir(path.dirname(file), { recursive: true });
+      await fs.writeFile(file, JSON.stringify(map, null, 2));
+      return;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
+export async function getWatched(): Promise<WatchedMap> {
+  if (storageKind() === "redis") {
+    const flat = (await redisCmd(["HGETALL", KEY])) as string[] | null;
+    const map: WatchedMap = {};
+    if (Array.isArray(flat)) {
+      for (let i = 0; i < flat.length; i += 2) {
+        map[flat[i]] = Number(flat[i + 1]) || 0;
+      }
+    }
+    return map;
+  }
+  return readFileMap();
+}
+
+export async function setWatched(id: string, watched: boolean): Promise<WatchedMap> {
+  if (storageKind() === "redis") {
+    if (watched) {
+      await redisCmd(["HSET", KEY, id, String(Date.now())]);
+    } else {
+      await redisCmd(["HDEL", KEY, id]);
+    }
+    return getWatched();
+  }
+  const map = await readFileMap();
+  if (watched) map[id] = Date.now();
+  else delete map[id];
+  await writeFileMap(map);
+  return map;
+}

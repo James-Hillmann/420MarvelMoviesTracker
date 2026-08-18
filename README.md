@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Road to Doomsday 🟢
 
-## Getting Started
+James & Deniz's MCU watch-through tracker — every Marvel movie before **Avengers: Doomsday** (Dec 18, 2026).
 
-First, run the development server:
+A poster-style snake board: click a title for posters, reviews and where to watch; mark it watched and the arrow trail turns green behind you. Movies are the main quest; the TV shows are a side quest that doesn't count toward the Doomsday clock. Toggle between release order and the in-universe timeline.
+
+## Run it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. It works immediately — progress is saved to `.data/progress.json` locally.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## TMDB API key (posters, synopses, reviews)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a free account at https://www.themoviedb.org/signup
+2. Go to https://www.themoviedb.org/settings/api and request an API key (choose "Developer", any personal-use answers are fine)
+3. Copy `.env.example` to `.env.local` and paste the "API Key" (the short v3 one) as `TMDB_API_KEY`
+4. Restart the dev server
 
-## Learn More
+Without the key everything still works — the detail cards just show basic info instead of live TMDB data.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy (shared progress for James + Deniz)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Deployed on Vercel with Upstash Redis so both of you see and update the same trail from any device:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npx vercel
+```
 
-## Deploy on Vercel
+Then in the Vercel dashboard:
+1. **Storage → Marketplace → Upstash Redis** → create the free database and connect it to the project (this injects `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`)
+2. **Settings → Environment Variables** → add `TMDB_API_KEY`
+3. Redeploy. The site URL is your shared board — bookmark it on both phones.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Where things live
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `lib/timeline.ts` — every movie/show, the watch orders, and each title's wordmark style (font, gradient, aura color). Add or restyle titles here.
+- `lib/timeline.ts` → `DOOMSDAY_DATE` — the countdown target if the release date moves.
+- `components/Board.tsx` + `ArrowPath.tsx` — the snake grid and the arrow trail.
+- `app/api/progress` — shared watched-state (Redis, falls back to a local file).
+- `app/api/title/[id]` — TMDB proxy (key stays server-side, cached daily).
