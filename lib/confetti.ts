@@ -8,6 +8,30 @@ export function celebrate(color: string) {
   confettiBurst(color);
 }
 
+/** Full-screen "boss defeated" splash for completing a phase. */
+export function phaseVictory(phaseLabel: string, bossName: string, quip: string, color: string) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  screenFlash(color);
+  confettiBurst(color);
+  // second wave, slightly delayed, so it reads bigger than a normal watch
+  setTimeout(() => confettiBurst(color), 350);
+
+  const overlay = document.createElement("div");
+  overlay.className = "phase-victory";
+  overlay.style.setProperty("--victory-color", color);
+  overlay.innerHTML = `
+    <div class="pv-inner">
+      <div class="pv-phase">${phaseLabel} — Complete</div>
+      <div class="pv-boss">${bossName}<span class="pv-slash"></span></div>
+      <div class="pv-defeated">Defeated</div>
+      <div class="pv-quip">&ldquo;${quip}&rdquo;</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("animationend", (ev) => {
+    if (ev.target === overlay) overlay.remove();
+  });
+}
+
 function screenFlash(color: string) {
   const el = document.createElement("div");
   el.className = "screen-flash";

@@ -167,6 +167,24 @@ export const PHASE_LABELS: Record<number, string> = {
   6: "Phase Six — The Road Ends",
 };
 
+export interface PhaseBoss {
+  name: string;
+  /** the movie you beat them in */
+  movie: string;
+  /** short victory quip shown on the splash */
+  quip: string;
+}
+
+/** the big bad you take down by finishing each phase */
+export const PHASE_BOSSES: Record<number, PhaseBoss> = {
+  1: { name: "Loki", movie: "The Avengers", quip: "Puny god." },
+  2: { name: "Ultron", movie: "Age of Ultron", quip: "No strings on you." },
+  3: { name: "Thanos", movie: "Endgame", quip: "Avengers, assemble." },
+  4: { name: "Scarlet Witch", movie: "Multiverse of Madness", quip: "The multiverse survives." },
+  5: { name: "The Void", movie: "Thunderbolts*", quip: "The New Avengers rise." },
+  6: { name: "Doctor Doom", movie: "Doomsday", quip: "The road ends here." },
+};
+
 export const PHASE_COLORS: Record<number, string> = {
   1: "#e8b64c",
   2: "#e07030",

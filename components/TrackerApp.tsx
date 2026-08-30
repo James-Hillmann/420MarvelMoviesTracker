@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { celebrate } from "@/lib/confetti";
+import { celebrate, phaseVictory } from "@/lib/confetti";
 import { Profile, profileById } from "@/lib/profiles";
-import { COUNTED_MOVIES, Entry, moviesInOrder, SHOWS } from "@/lib/timeline";
+import { COUNTED_MOVIES, Entry, MOVIES, moviesInOrder, PHASE_BOSSES, PHASE_COLORS, PHASE_LABELS, SHOWS } from "@/lib/timeline";
 import { useProgress } from "@/lib/useProgress";
 import Board from "./Board";
 import DetailModal from "./DetailModal";
@@ -29,7 +29,7 @@ export default function TrackerApp() {
   const profile = profileById(profileId);
   const { watched, toggle } = useProgress(profile?.id ?? null);
   const [orderMode, setOrderModeState] = useState<"release" | "chrono">("release");
-  const [showShows, setShowShowsState] = useState(true);
+  const [showShows, setShowShowsState] = useState(false);
   const [selected, setSelected] = useState<Entry | null>(null);
 
   // per-device display settings
@@ -80,7 +80,17 @@ export default function TrackerApp() {
 
   const handleToggle = async (entry: Entry) => {
     const nowWatched = await toggle(entry.id);
-    if (nowWatched) celebrate(entry.wm.aura);
+    if (!nowWatched) return;
+    // did this watch clear the whole phase? then it's a boss kill, not a confetti pop
+    const phase = entry.phase;
+    const boss = phase !== undefined ? PHASE_BOSSES[phase] : undefined;
+    const clearedPhase =
+      boss && MOVIES.filter((m) => m.phase === phase).every((m) => m.id === entry.id || watched[m.id]);
+    if (clearedPhase && phase !== undefined) {
+      phaseVictory(PHASE_LABELS[phase].split("—")[0].trim(), boss.name, boss.quip, PHASE_COLORS[phase]);
+    } else {
+      celebrate(entry.wm.aura);
+    }
   };
 
   // wait for localStorage before rendering anything (avoids a picker flash)

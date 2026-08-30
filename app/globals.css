@@ -220,6 +220,173 @@ body {
   white-space: nowrap;
 }
 
+.phase-banner .banner-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+/* ---------- phase defeated ---------- */
+.phase-banner.defeated .rule {
+  background: linear-gradient(90deg, transparent, var(--phase-color, var(--gold)), transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--phase-color, var(--gold)) 60%, transparent);
+}
+
+.phase-banner.defeated .label {
+  position: relative;
+  color: color-mix(in srgb, var(--phase-color, var(--gold)) 45%, #888);
+  text-shadow: none;
+}
+
+.phase-banner.defeated .label::after {
+  content: "";
+  position: absolute;
+  left: -0.2em;
+  right: 0.35em;
+  top: 52%;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--phase-color, var(--gold));
+  box-shadow: 0 0 10px var(--phase-color, var(--gold));
+  transform: scaleX(0) rotate(-1.5deg);
+  transform-origin: left center;
+  animation: strike-draw 0.7s cubic-bezier(0.7, 0, 0.2, 1) 0.15s forwards;
+}
+
+@keyframes strike-draw {
+  to { transform: scaleX(1) rotate(-1.5deg); }
+}
+
+.phase-banner .boss-tag {
+  font-family: var(--font-bebas), sans-serif;
+  font-size: clamp(0.7rem, 1.3vw, 0.85rem);
+  letter-spacing: 0.35em;
+  padding-left: 0.35em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--phase-color, var(--gold)) 90%, white);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--phase-color, var(--gold)) 70%, transparent);
+  opacity: 0;
+  animation: boss-tag-in 0.6s ease 0.55s forwards;
+}
+
+.phase-banner .boss-skull {
+  display: inline-block;
+  margin-right: 0.15em;
+  animation: skull-flicker 3.2s ease-in-out 1.2s infinite;
+}
+
+@keyframes boss-tag-in {
+  from { opacity: 0; transform: translateY(6px); filter: blur(3px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes skull-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ---------- phase victory splash ---------- */
+.phase-victory {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(60% 50% at 50% 50%, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.55) 60%, transparent 100%);
+  animation: pv-overlay 3s ease forwards;
+}
+
+@keyframes pv-overlay {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.phase-victory .pv-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+.phase-victory .pv-phase {
+  font-family: var(--font-bebas), sans-serif;
+  font-size: clamp(0.8rem, 2vw, 1.1rem);
+  letter-spacing: 0.5em;
+  padding-left: 0.5em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+  opacity: 0;
+  animation: pv-rise 0.5s ease 0.15s forwards;
+}
+
+.phase-victory .pv-boss {
+  position: relative;
+  font-family: var(--font-anton), sans-serif;
+  font-size: clamp(2.6rem, 9vw, 5.5rem);
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--victory-color, var(--gold));
+  text-shadow:
+    0 0 30px color-mix(in srgb, var(--victory-color, var(--gold)) 80%, transparent),
+    0 0 80px color-mix(in srgb, var(--victory-color, var(--gold)) 40%, transparent);
+  opacity: 0;
+  animation: pv-slam 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.2) 0.35s forwards;
+}
+
+.phase-victory .pv-slash {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: 52%;
+  height: clamp(3px, 0.6vw, 5px);
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: 0 0 18px #fff, 0 0 36px var(--victory-color, var(--gold));
+  transform: scaleX(0) rotate(-2deg);
+  transform-origin: left center;
+  animation: strike-draw 0.35s cubic-bezier(0.7, 0, 0.2, 1) 0.95s forwards;
+}
+
+.phase-victory .pv-defeated {
+  font-family: var(--font-bebas), sans-serif;
+  font-size: clamp(1.1rem, 3.4vw, 1.8rem);
+  letter-spacing: 0.7em;
+  padding-left: 0.7em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 24px color-mix(in srgb, var(--victory-color, var(--gold)) 70%, transparent);
+  opacity: 0;
+  animation: pv-rise 0.5s ease 1.15s forwards;
+}
+
+.phase-victory .pv-quip {
+  font-size: clamp(0.75rem, 1.8vw, 0.95rem);
+  font-style: italic;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  animation: pv-rise 0.5s ease 1.5s forwards;
+}
+
+@keyframes pv-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pv-slam {
+  from { opacity: 0; transform: scale(1.6); filter: blur(6px); }
+  to { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
 /* ---------- doomsday portal ---------- */
 .portal-wrap {
   position: relative;

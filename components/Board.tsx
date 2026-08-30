@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Entry, PHASE_COLORS, PHASE_LABELS } from "@/lib/timeline";
+import { useEffect, useRef, useState } from "react";
+import { Entry, PHASE_BOSSES, PHASE_COLORS, PHASE_LABELS } from "@/lib/timeline";
 import ArrowPath from "./ArrowPath";
 import Wordmark from "./Wordmark";
 
@@ -35,26 +35,35 @@ function buildRows(entries: Entry[], cols: number, showPhases: boolean): LayoutR
   return rows;
 }
 
-function PhaseBanner({ phase, row }: { phase: number; row: number }) {
+function PhaseBanner({ phase, row, defeated }: { phase: number; row: number; defeated: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(
-      ([entry]) => entry.isIntersecting && el.classList.add("visible"),
+      ([entry]) => entry.isIntersecting && setVisible(true),
       { threshold: 0.4 },
     );
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  const boss = PHASE_BOSSES[phase];
   return (
     <div
       ref={ref}
-      className="phase-banner"
+      className={`phase-banner ${visible ? "visible" : ""} ${defeated ? "defeated" : ""}`}
       style={{ "--phase-color": PHASE_COLORS[phase], gridRow: row, gridColumn: "1 / -1" } as React.CSSProperties}
     >
       <div className="rule" />
-      <span className="label">{PHASE_LABELS[phase]}</span>
+      <div className="banner-core">
+        <span className="label">{PHASE_LABELS[phase]}</span>
+        {defeated && boss && (
+          <span className="boss-tag">
+            <span className="boss-skull">☠</span> {boss.name} defeated
+          </span>
+        )}
+      </div>
       <div className="rule" />
     </div>
   );
@@ -96,6 +105,9 @@ export default function Board({
   const gridEntries = finale ? entries.filter((e) => e.id !== finale.id) : entries;
   const rows = buildRows(gridEntries, cols, showPhases);
   const order = entries.map((e) => e.id);
+
+  const phaseDefeated = (p: number) =>
+    entries.filter((e) => e.phase === p).every((e) => watched[e.id]);
 
   const registerCell = (id: string) => (el: HTMLElement | null) => {
     if (el) cellRefs.current.set(id, el);
@@ -154,7 +166,14 @@ export default function Board({
         {rows.flatMap((row, ri) => {
           const gridRow = ri + 1;
           if (row.kind === "banner") {
-            return [<PhaseBanner key={`banner-${row.phase}`} phase={row.phase} row={gridRow} />];
+            return [
+              <PhaseBanner
+                key={`banner-${row.phase}`}
+                phase={row.phase}
+                row={gridRow}
+                defeated={phaseDefeated(row.phase)}
+              />,
+            ];
           }
           return row.entries.map((e, j) => {
             const col = row.dir === 1 ? j : cols - 1 - j;
