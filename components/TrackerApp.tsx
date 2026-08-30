@@ -87,7 +87,7 @@ export default function TrackerApp() {
     const clearedPhase =
       boss && MOVIES.filter((m) => m.phase === phase).every((m) => m.id === entry.id || watched[m.id]);
     if (clearedPhase && phase !== undefined) {
-      phaseVictory(PHASE_LABELS[phase].split("—")[0].trim(), boss.name, boss.quip, PHASE_COLORS[phase]);
+      phaseVictory(PHASE_LABELS[phase].split("—")[0].trim(), boss.name, boss.quip, PHASE_COLORS[phase], boss.img);
     } else {
       celebrate(entry.wm.aura);
     }

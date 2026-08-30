@@ -9,7 +9,7 @@ export function celebrate(color: string) {
 }
 
 /** Full-screen "boss defeated" splash for completing a phase. */
-export function phaseVictory(phaseLabel: string, bossName: string, quip: string, color: string) {
+export function phaseVictory(phaseLabel: string, bossName: string, quip: string, color: string, img?: string) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   screenFlash(color);
   confettiBurst(color);
@@ -21,6 +21,7 @@ export function phaseVictory(phaseLabel: string, bossName: string, quip: string,
   overlay.style.setProperty("--victory-color", color);
   overlay.innerHTML = `
     <div class="pv-inner">
+      ${img ? `<img class="pv-img" src="${img}" alt="">` : ""}
       <div class="pv-phase">${phaseLabel} — Complete</div>
       <div class="pv-boss">${bossName}<span class="pv-slash"></span></div>
       <div class="pv-defeated">Defeated</div>

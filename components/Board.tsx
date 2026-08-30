@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CRACKS_SVG } from "@/lib/bossArt";
 import { Entry, PHASE_BOSSES, PHASE_COLORS, PHASE_LABELS } from "@/lib/timeline";
 import ArrowPath from "./ArrowPath";
 import Wordmark from "./Wordmark";
@@ -109,6 +110,16 @@ export default function Board({
   const phaseDefeated = (p: number) =>
     entries.filter((e) => e.phase === p).every((e) => watched[e.id]);
 
+  // grid-row span of each phase's cells (banner row excluded) for ruin overlays
+  const phaseSpans: { phase: number; start: number; end: number }[] = [];
+  rows.forEach((row, i) => {
+    if (row.kind === "banner") {
+      phaseSpans.push({ phase: row.phase, start: i + 2, end: i + 2 });
+    } else if (phaseSpans.length) {
+      phaseSpans[phaseSpans.length - 1].end = i + 1;
+    }
+  });
+
   const registerCell = (id: string) => (el: HTMLElement | null) => {
     if (el) cellRefs.current.set(id, el);
     else cellRefs.current.delete(id);
@@ -117,11 +128,12 @@ export default function Board({
   const renderCell = (e: Entry, gridStyle?: React.CSSProperties) => {
     const isWatched = Boolean(watched[e.id]);
     const isUpNext = e.id === upNextId && !isWatched;
+    const isConquered = showPhases && e.phase !== undefined && phaseDefeated(e.phase);
     return (
       <div
         key={e.id}
         ref={registerCell(e.id)}
-        className={`cell group ${isWatched ? "watched" : ""} ${isUpNext ? "upnext" : ""}`}
+        className={`cell group ${isWatched ? "watched" : ""} ${isUpNext ? "upnext" : ""} ${isConquered ? "conquered" : ""}`}
         style={{ "--aura": e.wm.aura, ...gridStyle } as React.CSSProperties}
         onClick={() => onSelect(e)}
         role="button"
@@ -180,6 +192,28 @@ export default function Board({
             return renderCell(e, { gridRow, gridColumn: col + 1 });
           });
         })}
+
+        {/* war-torn overlays across conquered phases */}
+        {phaseSpans
+          .filter((s) => phaseDefeated(s.phase))
+          .map((s) => (
+            <div
+              key={`ruin-${s.phase}`}
+              className="phase-ruin"
+              style={{
+                gridRow: `${s.start} / ${s.end + 1}`,
+                gridColumn: "1 / -1",
+                "--phase-color": PHASE_COLORS[s.phase],
+              } as React.CSSProperties}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="ruin-boss" src={PHASE_BOSSES[s.phase].img} alt="" draggable={false} />
+              <div className="ruin-cracks" dangerouslySetInnerHTML={{ __html: CRACKS_SVG }} />
+              <div className="ruin-slash a" />
+              <div className="ruin-slash b" />
+              <div className="ruin-scorch" />
+            </div>
+          ))}
       </div>
 
       {finale && (
